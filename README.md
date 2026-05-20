@@ -196,6 +196,27 @@ The extension needs permission to write to that folder once. After that it write
 
 ---
 
+## What about my API key?
+
+Stored in `chrome.storage.local` — Chrome's per-extension sandboxed storage. The key never leaves your machine and no other extension or website can read it.
+
+**Optional passphrase encryption (recommended).** Settings → check **"Encrypt my API key with a passphrase"**. The extension wraps your key with AES-GCM using a 256-bit key derived from your passphrase via PBKDF2-SHA256 (100,000 iterations). The encrypted blob lives in `chrome.storage.local`; your passphrase is never stored anywhere. The derived key is cached in `chrome.storage.session` (memory-only, never written to disk) so you enter the passphrase **once per browser session** — every Extract Now for the rest of the day stays at three clicks.
+
+With encryption on, a malicious process running as your OS user can no longer read your API key from disk without your passphrase. Forgot the passphrase? Disable encryption (you'll need the passphrase) or clear it manually and paste a new key.
+
+**With encryption off**, the key is plain text in the LevelDB file on disk. This is the same trust level as every other browser extension that stores an API key (1Password, Grammarly, etc.) — but you should still consider the mitigations below.
+
+Practical mitigations regardless of encryption choice:
+
+- **Scope the key narrowly.** Anthropic, OpenAI, and OpenRouter all let you create keys with monthly spend caps. A leaked key with a $5 cap can do less damage than an unlimited one.
+- **Enable disk encryption.** BitLocker on Windows, FileVault on macOS, LUKS on Linux. One toggle. Encrypts everything at rest, including Chrome's profile.
+- **Monitor usage.** Each provider has a dashboard. Anomalous spikes → rotate the key.
+- **Use Ollama.** Total Recall's local-LLM provider needs no key at all. Pick it from Settings if zero-cloud is your goal.
+
+What encryption does NOT protect against: an attacker who can keylog your passphrase, dump RAM while the popup is unlocked, or modify the extension code. Defence-in-depth, not a vault.
+
+---
+
 ## Setup
 
 > v0.1 is not yet on the Chrome Web Store. Install as a developer/unpacked extension.

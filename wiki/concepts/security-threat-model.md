@@ -94,10 +94,35 @@ PASS | href data attr             → reject
 PASS | md https link OK           → accept
 ```
 
+## API key storage modes (as of v0.1)
+
+The extension supports two modes for the API key, selectable in Settings.
+
+**Plaintext (default for ease of onboarding):**
+- Key stored as a string in `chrome.storage.local` under `llm-api-key`
+- Sandboxed by Chrome per-extension; other extensions and web pages cannot read it
+- On disk: readable as plain text by any process running as the OS user, by another admin, or by a forensic image of the Chrome profile
+
+**Encrypted (opt-in via Settings → "Encrypt my API key with a passphrase"):**
+- Key wrapped with AES-GCM 256-bit
+- Wrapping key derived from user passphrase via PBKDF2-SHA256 at 100,000 iterations + 16-byte random salt
+- Encrypted envelope `{ salt, iv, ciphertext }` stored in `chrome.storage.local['llm-api-key-encrypted']`; plaintext slot wiped
+- Derived key cached in `chrome.storage.session` (memory-only, never written to disk) for the browser session — passphrase entered once per browser restart
+- Implementation in `crypto.js` using Web Crypto API; zero external dependencies
+
+What encryption defends against:
+- Passive filesystem attackers (malware that scrapes Chrome profiles, another OS user reading the LevelDB file, lifted Chrome profile backups)
+- Forensic disk imaging at rest
+
+What it does NOT defend against:
+- Active attackers with code-execution as the user (can keylog the passphrase or dump RAM while the popup is unlocked)
+- Modified extension code (would have direct access to plaintext after decryption)
+- Weak passphrases — 100k PBKDF2 iterations is fast enough to be invisible but a dictionary-word passphrase remains brute-forceable
+
 ## Future work (v0.2+)
 
-- **Encrypted key storage** — passphrase-derived key wraps the API key at rest. Mitigates filesystem-compromise threat partially. Costs onboarding friction.
 - **Audit log** — append-only record of what Total Recall did and when. User-visible.
 - **Signed releases** — Web Store publication step.
 - **Optional Tor / proxy support** — for users who don't want their LLM provider to see their IP.
 - **Review-before-save mode** — show Engram output and require user confirmation before appending to BRAIN.md. Mitigates memory-poisoning threat from extracting untrusted conversations.
+- **Hardware-backed key wrapping** — use WebAuthn / TPM via the `large-blob` extension to wrap the encryption key. Eliminates the passphrase entry step for users with security keys.

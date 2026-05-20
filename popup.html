@@ -111,6 +111,15 @@
     </div>
 
     <div class="help-section">
+      <h3>Can I encrypt my API key?</h3>
+      <p>Yes — optional. Open <em>Settings</em> and tick <strong>"Encrypt my API key with a passphrase"</strong>. We wrap your key with AES-GCM using a 256-bit key derived from your passphrase via PBKDF2 (100,000 iterations).</p>
+      <p>You enter the passphrase <strong>once per browser session</strong>. The derived key sits in browser memory only — never written to disk — until you close the browser.</p>
+      <p>What this protects against: someone with read-access to your computer's files (malware, another OS user, a forensic dump) can no longer read your API key without your passphrase.</p>
+      <p>What it does NOT protect against: an attacker who can run code as you (they could capture the passphrase), or modify the extension itself. Encryption is one layer of defence, not a vault.</p>
+      <p>If you forget the passphrase, your encrypted key is unrecoverable. Disable encryption (you'd need the passphrase), or clear it in Settings and paste a new key.</p>
+    </div>
+
+    <div class="help-section">
       <h3>Where does my data go?</h3>
       <p>Your decisions stay on your computer. Total Recall has no server. We never see your chats.</p>
       <p>The only outside connection happens when you click <em>Extract Now</em>. The current chat gets sent to the AI provider you chose so they can read it and pull out the decisions. Nothing else leaves your machine.</p>
@@ -192,9 +201,45 @@
 
     <div class="provider-help" id="providerHelp"></div>
 
+    <div class="form-group form-group-encryption" id="encryptionGroup">
+      <label class="checkbox-label">
+        <input id="encryptionToggle" type="checkbox">
+        <span>Encrypt my API key with a passphrase</span>
+      </label>
+      <p class="hint" id="encryptionHint">When enabled, your API key is wrapped with AES-GCM using a key derived from your passphrase (PBKDF2-SHA256, 100k iterations). You enter the passphrase once per browser session.</p>
+    </div>
+
+    <div class="form-group" id="passphraseGroup" hidden>
+      <label for="passphraseInput" class="label">Passphrase <span class="label-aux">(min 8 chars)</span></label>
+      <input id="passphraseInput" type="password" class="input" autocomplete="new-password">
+      <label for="passphraseConfirm" class="label" style="margin-top: 10px;">Confirm passphrase</label>
+      <input id="passphraseConfirm" type="password" class="input" autocomplete="new-password">
+      <div id="passphraseError" class="hint hint-error"></div>
+    </div>
+
+    <div class="form-group" id="encryptedStateInfo" hidden>
+      <p class="hint">🔒 Your API key is currently encrypted. Save to keep settings; turning the toggle off will prompt for your passphrase to decrypt.</p>
+    </div>
+
     <div class="form-actions">
       <button id="testConnBtn" type="button" class="btn-secondary">Test connection</button>
       <button id="saveSettingsBtn" type="button" class="btn-primary">Save</button>
+    </div>
+  </section>
+
+  <section id="lockView" class="view" hidden>
+    <div class="settings-header">
+      <button id="lockCancelBtn" type="button" class="link-btn">← Cancel</button>
+      <h2 class="settings-title">Unlock API key</h2>
+    </div>
+    <p class="lock-prompt" id="lockPrompt">Your API key is encrypted. Enter your passphrase to use it.</p>
+    <div class="form-group">
+      <label for="lockPassphraseInput" class="label">Passphrase</label>
+      <input id="lockPassphraseInput" type="password" class="input" autocomplete="current-password">
+      <div id="lockError" class="hint hint-error"></div>
+    </div>
+    <div class="form-actions">
+      <button id="lockUnlockBtn" type="button" class="btn-primary">Unlock</button>
     </div>
   </section>
 

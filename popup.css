@@ -585,3 +585,50 @@ select.input option {
   margin-top: var(--s-md);
 }
 .form-actions button { flex: 1; }
+
+/* Encryption toggle ---------------------------------------------------- */
+
+.form-group-encryption {
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+  padding: var(--s-sm) var(--s-md);
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-xs);
+  font-size: 13px;
+  color: var(--ink);
+  cursor: pointer;
+  user-select: none;
+  letter-spacing: -0.05px;
+}
+.checkbox-label input[type="checkbox"] {
+  margin: 2px 0 0 0;
+  width: 14px;
+  height: 14px;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+.checkbox-label span {
+  font-weight: 500;
+}
+
+#encryptionHint {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--ink-subtle);
+  line-height: 1.45;
+}
+
+/* Lock view ----------------------------------------------------------- */
+
+.lock-prompt {
+  font-size: 13px;
+  color: var(--ink-muted);
+  margin: 0 0 var(--s-md) 0;
+  line-height: 1.5;
+  letter-spacing: -0.05px;
+}

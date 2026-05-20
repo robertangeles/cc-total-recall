@@ -33,6 +33,7 @@ const COPY = {
     folderReady: (name) => `Brain folder: ${name}`,
     providerNone: 'Engram: not configured',
     providerNoKey: (label) => `Engram: ${label} — key missing`,
+    providerLocked: (label) => `Engram: ${label} — locked (click Extract Now to unlock)`,
     providerReady: (label) => `Engram: ${label}`
   },
   messages: {
@@ -165,6 +166,7 @@ const $ = (id) => document.getElementById(id);
 const mainView       = $('mainView');
 const settingsView   = $('settingsView');
 const helpView       = $('helpView');
+const lockView       = $('lockView');
 const settingsToggle = $('settingsToggle');
 const helpToggle     = $('helpToggle');
 const backBtn        = $('backBtn');
@@ -172,6 +174,19 @@ const helpBackBtn    = $('helpBackBtn');
 
 const welcomeCard    = $('welcomeCard');
 const welcomeHelpLink = $('welcomeHelpLink');
+
+const encryptionToggle = $('encryptionToggle');
+const passphraseGroup  = $('passphraseGroup');
+const passphraseInput  = $('passphraseInput');
+const passphraseConfirm = $('passphraseConfirm');
+const passphraseError  = $('passphraseError');
+const encryptedStateInfo = $('encryptedStateInfo');
+
+const lockPassphraseInput = $('lockPassphraseInput');
+const lockError       = $('lockError');
+const lockUnlockBtn   = $('lockUnlockBtn');
+const lockCancelBtn   = $('lockCancelBtn');
+const lockPrompt      = $('lockPrompt');
 
 const folderDot      = $('folderDot');
 const folderStatus   = $('folderStatus');
@@ -216,6 +231,7 @@ function showMain() {
   mainView.hidden = false;
   settingsView.hidden = true;
   helpView.hidden = true;
+  lockView.hidden = true;
   render();
 }
 
@@ -223,18 +239,46 @@ async function showSettings() {
   mainView.hidden = true;
   settingsView.hidden = false;
   helpView.hidden = true;
-  const stored = await chrome.storage.local.get(['llm-provider', 'llm-api-key', 'llm-model']);
+  lockView.hidden = true;
+  const stored = await chrome.storage.local.get(['llm-provider', 'llm-api-key', 'llm-model', 'llm-encryption-enabled']);
   providerSelect.value = stored['llm-provider'] || 'anthropic';
   apiKeyInput.value = stored['llm-api-key'] || '';
+  encryptionToggle.checked = !!stored['llm-encryption-enabled'];
+  passphraseInput.value = '';
+  passphraseConfirm.value = '';
+  passphraseError.textContent = '';
   updateProviderUI();
   applyStoredModel(stored['llm-model'] || '');
+  updateEncryptionUI();
 }
 
 function showHelp() {
   mainView.hidden = true;
   settingsView.hidden = true;
   helpView.hidden = false;
+  lockView.hidden = true;
   helpView.scrollTop = 0;
+}
+
+// Lock view shown when a flow needs to decrypt the API key.
+// Stores a "pending action" closure that runs after successful unlock.
+let pendingActionAfterUnlock = null;
+
+function showLockView(promptText, pendingFn) {
+  pendingActionAfterUnlock = pendingFn;
+  mainView.hidden = true;
+  settingsView.hidden = true;
+  helpView.hidden = true;
+  lockView.hidden = false;
+  lockPrompt.textContent = promptText || 'Your API key is encrypted. Enter your passphrase to use it.';
+  lockPassphraseInput.value = '';
+  lockError.textContent = '';
+  setTimeout(() => lockPassphraseInput.focus(), 50);
+}
+
+function cancelLock() {
+  pendingActionAfterUnlock = null;
+  showMain();
 }
 
 function updateProviderUI() {
@@ -296,6 +340,141 @@ function getSelectedModel() {
   return !modelInput.hidden ? modelInput.value.trim() : modelSelect.value;
 }
 
+// --- Encryption state machine ---------------------------------------------
+
+const DERIVED_KEY_SESSION = 'derived-key';
+
+async function isEncryptionEnabled() {
+  const { 'llm-encryption-enabled': flag } = await chrome.storage.local.get(['llm-encryption-enabled']);
+  return !!flag;
+}
+
+async function getEncryptedEnvelope() {
+  const { 'llm-api-key-encrypted': env } = await chrome.storage.local.get(['llm-api-key-encrypted']);
+  return env || null;
+}
+
+async function getCachedDerivedKey() {
+  if (!chrome.storage.session) return null;
+  const { [DERIVED_KEY_SESSION]: base64Key } = await chrome.storage.session.get([DERIVED_KEY_SESSION]);
+  if (!base64Key) return null;
+  try {
+    const c = await import(chrome.runtime.getURL('crypto.js'));
+    return await c.importKeyFromBase64(base64Key);
+  } catch (err) {
+    console.warn('[Total Recall] failed to import cached derived key:', err);
+    return null;
+  }
+}
+
+async function cacheDerivedKey(cryptoKey) {
+  if (!chrome.storage.session) return;
+  try {
+    const c = await import(chrome.runtime.getURL('crypto.js'));
+    const base64 = await c.exportKeyToBase64(cryptoKey);
+    await chrome.storage.session.set({ [DERIVED_KEY_SESSION]: base64 });
+  } catch (err) {
+    console.warn('[Total Recall] failed to cache derived key:', err);
+  }
+}
+
+async function clearCachedDerivedKey() {
+  if (!chrome.storage.session) return;
+  try { await chrome.storage.session.remove([DERIVED_KEY_SESSION]); } catch { /* ignore */ }
+}
+
+// Returns the decrypted API key or null if unavailable.
+// If encryption is on and the session cache is empty, shows the lock view
+// and runs `pendingFn` after the user unlocks.
+async function getApiKey(pendingFn) {
+  const stored = await chrome.storage.local.get(['llm-api-key', 'llm-api-key-encrypted', 'llm-encryption-enabled']);
+  if (!stored['llm-encryption-enabled']) {
+    return stored['llm-api-key'] || null;
+  }
+  const envelope = stored['llm-api-key-encrypted'];
+  if (!envelope) return null;
+
+  const cachedKey = await getCachedDerivedKey();
+  if (cachedKey) {
+    try {
+      const c = await import(chrome.runtime.getURL('crypto.js'));
+      return await c.decryptWithKey(envelope, cachedKey);
+    } catch (err) {
+      console.warn('[Total Recall] cached key failed to decrypt — clearing and prompting:', err);
+      await clearCachedDerivedKey();
+    }
+  }
+  // Not unlocked yet — show lock view and re-run the action after unlock
+  showLockView(
+    'Your API key is encrypted. Enter your passphrase once per browser session.',
+    pendingFn || (() => {})
+  );
+  return null; // caller should bail and let the unlock flow re-trigger
+}
+
+async function tryUnlock() {
+  const passphrase = lockPassphraseInput.value;
+  if (!passphrase) {
+    lockError.textContent = 'Enter your passphrase.';
+    return;
+  }
+  lockUnlockBtn.disabled = true;
+  lockUnlockBtn.textContent = 'Unlocking…';
+  try {
+    const envelope = await getEncryptedEnvelope();
+    if (!envelope) {
+      lockError.textContent = 'No encrypted key found. Disable encryption in Settings.';
+      return;
+    }
+    const c = await import(chrome.runtime.getURL('crypto.js'));
+    // Derive the key from the entered passphrase and the stored salt.
+    const saltBytes = Uint8Array.from(atob(envelope.salt), (ch) => ch.charCodeAt(0));
+    const derivedKey = await c.deriveKey(passphrase, saltBytes);
+    // Verify by decrypting (will throw on wrong passphrase).
+    try {
+      await c.decryptWithKey(envelope, derivedKey);
+    } catch {
+      lockError.textContent = 'Wrong passphrase.';
+      lockPassphraseInput.select();
+      return;
+    }
+    await cacheDerivedKey(derivedKey);
+    const fn = pendingActionAfterUnlock;
+    pendingActionAfterUnlock = null;
+    showMain();
+    showMessage('Unlocked for this browser session', 'success');
+    if (fn) setTimeout(fn, 50); // run pending action shortly after view switches
+  } catch (err) {
+    console.error('[Total Recall] tryUnlock failed:', err);
+    lockError.textContent = 'Could not unlock. See popup console.';
+  } finally {
+    lockUnlockBtn.disabled = false;
+    lockUnlockBtn.textContent = 'Unlock';
+  }
+}
+
+function updateEncryptionUI() {
+  const provider = providerSelect.value;
+  const info = PROVIDER_INFO[provider];
+  // Encryption is only meaningful when a key is actually stored.
+  const showEncryption = info.keyRequired;
+  $('encryptionGroup').hidden = !showEncryption;
+
+  if (!showEncryption) {
+    passphraseGroup.hidden = true;
+    encryptedStateInfo.hidden = true;
+    return;
+  }
+
+  const currentlyEncrypted = encryptionToggle.checked;
+  isEncryptionEnabled().then((alreadyOn) => {
+    // Show passphrase fields when toggling ON from currently OFF.
+    passphraseGroup.hidden = !(currentlyEncrypted && !alreadyOn);
+    // Show informational note when encryption is already active.
+    encryptedStateInfo.hidden = !alreadyOn;
+  });
+}
+
 async function validateApiKeyLive() {
   const provider = providerSelect.value;
   const info = PROVIDER_INFO[provider];
@@ -336,21 +515,43 @@ async function getState() {
     }
   }
 
-  const stored = await chrome.storage.local.get(['llm-provider', 'llm-api-key', 'last-extracted-at']);
+  const stored = await chrome.storage.local.get([
+    'llm-provider',
+    'llm-api-key',
+    'llm-api-key-encrypted',
+    'llm-encryption-enabled',
+    'last-extracted-at'
+  ]);
   const provider = stored['llm-provider'];
-  const apiKey = stored['llm-api-key'];
   const lastExtractedAt = stored['last-extracted-at'] || null;
 
+  // Detect whether the session cache holds the derived key (encrypted-unlocked).
+  let sessionUnlocked = false;
+  if (chrome.storage.session) {
+    try {
+      const sess = await chrome.storage.session.get([DERIVED_KEY_SESSION]);
+      sessionUnlocked = !!sess[DERIVED_KEY_SESSION];
+    } catch { /* ignore */ }
+  }
+
   let providerReady = false;
+  let providerLocked = false;
   if (provider && PROVIDER_INFO[provider]) {
     if (PROVIDER_INFO[provider].keyRequired) {
-      providerReady = !!apiKey;
+      if (stored['llm-api-key']) {
+        // Plaintext key stored — ready.
+        providerReady = true;
+      } else if (stored['llm-api-key-encrypted']) {
+        // Encrypted key configured — ready, but possibly locked if not unlocked this session.
+        providerReady = true;
+        providerLocked = !sessionUnlocked;
+      }
     } else {
       providerReady = true;
     }
   }
 
-  return { folderState, folderName, handle, provider, providerReady, lastExtractedAt };
+  return { folderState, folderName, handle, provider, providerReady, providerLocked, lastExtractedAt };
 }
 
 // --- Render ----------------------------------------------------------------
@@ -378,6 +579,8 @@ async function render() {
     setStatus(providerDot, providerStatus, 'off', COPY.status.providerNone);
   } else if (!state.providerReady) {
     setStatus(providerDot, providerStatus, 'warn', COPY.status.providerNoKey(PROVIDER_INFO[state.provider].label));
+  } else if (state.providerLocked) {
+    setStatus(providerDot, providerStatus, 'warn', COPY.status.providerLocked(PROVIDER_INFO[state.provider].label));
   } else {
     setStatus(providerDot, providerStatus, 'on', COPY.status.providerReady(PROVIDER_INFO[state.provider].label));
   }
@@ -532,17 +735,25 @@ async function extractNow(btn) {
     return;
   }
 
-  const stored = await chrome.storage.local.get(['llm-provider', 'llm-api-key', 'llm-model']);
+  const stored = await chrome.storage.local.get(['llm-provider', 'llm-model']);
   const provider = stored['llm-provider'];
-  const apiKey = stored['llm-api-key'];
   const model = stored['llm-model'] || undefined;
   if (!provider) {
     showMessage(COPY.messages.needProvider, 'error');
     return;
   }
-  if (PROVIDER_INFO[provider].keyRequired && !apiKey) {
-    showMessage(COPY.messages.needKey(PROVIDER_INFO[provider].label), 'error');
-    return;
+  // Resolve API key — may trigger lock view if encrypted and not unlocked.
+  let apiKey;
+  if (PROVIDER_INFO[provider].keyRequired) {
+    apiKey = await getApiKey(() => extractNow());
+    if (apiKey === null) {
+      // Either no key configured OR lock view is now showing.
+      // Distinguish by checking if encryption is enabled.
+      if (!(await isEncryptionEnabled())) {
+        showMessage(COPY.messages.needKey(PROVIDER_INFO[provider].label), 'error');
+      }
+      return;
+    }
   }
 
   if (btn) {
@@ -658,24 +869,165 @@ async function copyBrain(btn) {
 async function saveSettings() {
   const provider = providerSelect.value;
   const info = PROVIDER_INFO[provider];
-  const apiKey = apiKeyInput.value.trim();
+  const newApiKey = apiKeyInput.value.trim();
   const model = getSelectedModel();
+  const wantsEncryption = encryptionToggle.checked && info.keyRequired;
+  const wasEncrypted = await isEncryptionEnabled();
+  passphraseError.textContent = '';
 
-  if (info.keyRequired) {
-    if (!apiKey) {
-      showMessage(COPY.messages.keyRequired, 'error');
-      return;
-    }
+  // Validate API key format only if the user entered one (they may keep an existing encrypted key).
+  if (info.keyRequired && newApiKey) {
     const engram = await import(chrome.runtime.getURL('engram.js'));
-    if (!engram.validateApiKey(provider, apiKey)) {
+    if (!engram.validateApiKey(provider, newApiKey)) {
       showMessage(COPY.messages.keyInvalid(info.label), 'error');
       return;
     }
   }
 
+  // CASE 1 — encryption desired and not yet active: derive key, encrypt, save.
+  if (wantsEncryption && !wasEncrypted) {
+    if (!newApiKey) {
+      showMessage(COPY.messages.keyRequired, 'error');
+      return;
+    }
+    const pp = passphraseInput.value;
+    const pp2 = passphraseConfirm.value;
+    if (pp.length < 8) {
+      passphraseError.textContent = 'Passphrase must be at least 8 characters.';
+      return;
+    }
+    if (pp !== pp2) {
+      passphraseError.textContent = "Passphrases don't match.";
+      return;
+    }
+    const c = await import(chrome.runtime.getURL('crypto.js'));
+    const envelope = await c.encryptString(newApiKey, pp);
+    await chrome.storage.local.set({
+      'llm-provider': provider,
+      'llm-api-key': '',
+      'llm-api-key-encrypted': envelope,
+      'llm-encryption-enabled': true,
+      'llm-model': model
+    });
+    // Cache the derived key for this session so user doesn't have to enter passphrase again.
+    const saltBytes = Uint8Array.from(atob(envelope.salt), (ch) => ch.charCodeAt(0));
+    const derivedKey = await c.deriveKey(pp, saltBytes);
+    await cacheDerivedKey(derivedKey);
+    showMessage('Settings saved — API key encrypted', 'success');
+    showMain();
+    return;
+  }
+
+  // CASE 2 — encryption was on, user wants it OFF: prompt for passphrase to decrypt + save plaintext.
+  if (!wantsEncryption && wasEncrypted) {
+    const envelope = await getEncryptedEnvelope();
+    if (!envelope) {
+      // Inconsistent state — clear the flag and save plaintext.
+      await chrome.storage.local.set({
+        'llm-provider': provider,
+        'llm-api-key': newApiKey,
+        'llm-api-key-encrypted': null,
+        'llm-encryption-enabled': false,
+        'llm-model': model
+      });
+      await clearCachedDerivedKey();
+      showMessage(COPY.messages.settingsSaved, 'success');
+      showMain();
+      return;
+    }
+    showLockView(
+      'Enter your passphrase to disable encryption and decrypt your API key.',
+      async () => {
+        // After unlock, retry the save with cached key available
+        const c = await import(chrome.runtime.getURL('crypto.js'));
+        const cached = await getCachedDerivedKey();
+        if (!cached) {
+          showMessage('Could not unlock', 'error');
+          return;
+        }
+        try {
+          const decrypted = await c.decryptWithKey(envelope, cached);
+          const keyToStore = newApiKey || decrypted;
+          await chrome.storage.local.set({
+            'llm-provider': provider,
+            'llm-api-key': keyToStore,
+            'llm-api-key-encrypted': null,
+            'llm-encryption-enabled': false,
+            'llm-model': model
+          });
+          await clearCachedDerivedKey();
+          showMessage('Encryption disabled', 'success');
+          showMain();
+        } catch (err) {
+          showMessage('Decryption failed', 'error');
+        }
+      }
+    );
+    return;
+  }
+
+  // CASE 3 — encryption stays ON and user provided a new API key: re-encrypt with cached key (or prompt).
+  if (wantsEncryption && wasEncrypted && newApiKey) {
+    const cached = await getCachedDerivedKey();
+    if (!cached) {
+      showLockView(
+        'Enter your passphrase to update your encrypted API key.',
+        () => saveSettings()
+      );
+      return;
+    }
+    // Re-encrypt new API key with the same passphrase (re-export the cached key, get salt from existing envelope... actually we need to re-derive from passphrase to use a new salt)
+    // Simpler: keep the existing salt + IV scheme. Use a fresh IV.
+    const c = await import(chrome.runtime.getURL('crypto.js'));
+    const existing = await getEncryptedEnvelope();
+    const saltBytes = Uint8Array.from(atob(existing.salt), (ch) => ch.charCodeAt(0));
+    // Encrypt with the cached key + fresh IV
+    const newIv = crypto.getRandomValues(new Uint8Array(12));
+    const ciphertext = await crypto.subtle.encrypt(
+      { name: 'AES-GCM', iv: newIv },
+      cached,
+      new TextEncoder().encode(newApiKey)
+    );
+    const envelope = {
+      salt: existing.salt,
+      iv: btoa(String.fromCharCode(...newIv)),
+      ciphertext: btoa(String.fromCharCode(...new Uint8Array(ciphertext)))
+    };
+    await chrome.storage.local.set({
+      'llm-provider': provider,
+      'llm-api-key': '',
+      'llm-api-key-encrypted': envelope,
+      'llm-encryption-enabled': true,
+      'llm-model': model
+    });
+    showMessage('Settings saved — new API key encrypted', 'success');
+    showMain();
+    return;
+  }
+
+  // CASE 4 — encryption was on and stays on, only provider/model changed (no new key entered).
+  if (wantsEncryption && wasEncrypted && !newApiKey) {
+    await chrome.storage.local.set({
+      'llm-provider': provider,
+      'llm-model': model
+    });
+    showMessage(COPY.messages.settingsSaved, 'success');
+    showMain();
+    return;
+  }
+
+  // CASE 5 — no encryption (plaintext) save.
+  if (info.keyRequired && !newApiKey && !wasEncrypted) {
+    // No existing plaintext to keep + nothing entered = error
+    const existing = await chrome.storage.local.get(['llm-api-key']);
+    if (!existing['llm-api-key']) {
+      showMessage(COPY.messages.keyRequired, 'error');
+      return;
+    }
+  }
   await chrome.storage.local.set({
     'llm-provider': provider,
-    'llm-api-key': info.keyRequired ? apiKey : '',
+    'llm-api-key': info.keyRequired ? (newApiKey || (await chrome.storage.local.get(['llm-api-key']))['llm-api-key'] || '') : '',
     'llm-model': model
   });
   showMessage(COPY.messages.settingsSaved, 'success');
@@ -685,9 +1037,19 @@ async function saveSettings() {
 async function testConnection() {
   const provider = providerSelect.value;
   const info = PROVIDER_INFO[provider];
-  const apiKey = apiKeyInput.value.trim();
+  let apiKey = apiKeyInput.value.trim();
   const model = getSelectedModel() || undefined;
 
+  // If no key entered in the field, fall back to the stored key (decrypting if needed).
+  if (info.keyRequired && !apiKey) {
+    apiKey = await getApiKey(() => testConnection());
+    if (apiKey === null) {
+      if (!(await isEncryptionEnabled())) {
+        showMessage(COPY.messages.testNeedKey, 'error');
+      }
+      return;
+    }
+  }
   if (info.keyRequired && !apiKey) {
     showMessage(COPY.messages.testNeedKey, 'error');
     return;
@@ -749,6 +1111,12 @@ settingsToggle.addEventListener('click', showSettings);
 helpToggle.addEventListener('click', showHelp);
 backBtn.addEventListener('click', showMain);
 helpBackBtn.addEventListener('click', showMain);
+lockCancelBtn.addEventListener('click', cancelLock);
+lockUnlockBtn.addEventListener('click', tryUnlock);
+lockPassphraseInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); tryUnlock(); }
+});
+encryptionToggle.addEventListener('change', updateEncryptionUI);
 if (welcomeHelpLink) {
   welcomeHelpLink.addEventListener('click', (e) => {
     e.preventDefault();
