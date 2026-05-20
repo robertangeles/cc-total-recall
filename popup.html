@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Total Recall</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header class="header">
+    <div class="brand">
+      <img class="brand-mark" src="icons/icon48.png" width="24" height="24" alt="" aria-hidden="true">
+      <h1>Total Recall</h1>
+    </div>
+    <div class="header-actions">
+      <button id="helpToggle" type="button" class="icon-btn" aria-label="Help" title="Help">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </button>
+      <button id="settingsToggle" type="button" class="icon-btn" aria-label="Settings" title="Settings">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <section id="mainView" class="view">
+    <p class="tagline">Your AI finally remembers what you decided.</p>
+
+    <div id="welcomeCard" class="welcome-card" hidden>
+      <h2 class="card-eyebrow">How it works</h2>
+      <p class="welcome-lede">AI chats forget everything when you close the tab. Total Recall saves the decisions you made — locked in, on your computer — and quietly hands them back when you start a new chat.</p>
+      <ol class="how-list">
+        <li>Pick a folder on your computer. <span class="muted">A plain markdown file called BRAIN.md lives there.</span></li>
+        <li>Connect an AI provider. <span class="muted">We walk you through it. Costs less than a cent per use.</span></li>
+        <li>After any Claude.ai chat, click the icon, then <strong>Reconnect</strong>, then <strong>Extract Now</strong>. <span class="muted">Three clicks per save.</span></li>
+      </ol>
+      <p class="welcome-foot">Everything stays on your machine. No cloud. No account. No tracking. <a href="#" id="welcomeHelpLink" class="welcome-link">Read full help →</a></p>
+    </div>
+
+    <div class="status-card">
+      <div class="status-row">
+        <span id="folderDot" class="dot dot-off"></span>
+        <span id="folderStatus" class="status-text">Brain folder: not connected</span>
+      </div>
+      <div class="status-row">
+        <span id="providerDot" class="dot dot-off"></span>
+        <span id="providerStatus" class="status-text">Engram: not configured</span>
+      </div>
+    </div>
+
+    <div id="actionsArea" class="actions"></div>
+
+    <div id="meta" class="meta"></div>
+  </section>
+
+  <section id="helpView" class="view" hidden>
+    <div class="settings-header">
+      <button id="helpBackBtn" type="button" class="link-btn">← Back</button>
+      <h2 class="settings-title">Help</h2>
+    </div>
+
+    <div class="help-section">
+      <h3>What is Total Recall?</h3>
+      <p>AI chats forget everything the moment you close the tab. Total Recall saves what you decided to a file on your own computer. Next time you start a new chat, Total Recall pastes your past decisions in so the AI remembers.</p>
+      <p>You stop having to explain yourself every time.</p>
+    </div>
+
+    <div class="help-section">
+      <h3>How does it work?</h3>
+      <ol>
+        <li><strong>Pick a folder</strong> on your computer. Total Recall creates a file called <code>BRAIN.md</code> inside it. Your decisions live there as plain text — you can read or edit it anytime.</li>
+        <li><strong>Connect an AI provider</strong> (Anthropic, OpenAI, OpenRouter, or Ollama). This is the AI that reads your chats and pulls out the decisions. Settings walks you through getting a key.</li>
+        <li><strong>After a Claude.ai chat</strong>, click the Total Recall icon, then <em>Reconnect</em>, then <em>Extract Now</em>. Three clicks per save. Total Recall reads the chat, picks out the real decisions, and saves them to BRAIN.md.</li>
+      </ol>
+      <p>Why three clicks? Browsers drop the folder-access permission every time the popup closes, so we ask you to grant it back. One click. Not zero, but not painful.</p>
+    </div>
+
+    <div class="help-section">
+      <h3>Which AI sites work?</h3>
+      <p><strong>Claude.ai — fully supported.</strong> Extract Now is verified against the current page layout. Copy Brain works too.</p>
+      <p><strong>ChatGPT, Gemini, DeepSeek — experimental in v0.1.</strong> Their page layouts change without warning. Extract Now may find nothing or miss messages on these sites. Copy Brain still works because it doesn't read the page — it just wraps your BRAIN.md in a platform-specific intro and copies it to your clipboard.</p>
+      <p>Reliable extraction on all four is on the v0.2 roadmap.</p>
+    </div>
+
+    <div class="help-section">
+      <h3>Why does Total Recall need an AI provider?</h3>
+      <p><strong>Why an AI at all?</strong></p>
+      <p>Imagine you had a long chat with Claude — 50 messages mixing real decisions, small talk, and what-ifs. If Total Recall just saved the whole chat, BRAIN.md would become huge and messy.</p>
+      <p>We need something that can read the chat and pull out only the parts that matter — your actual decisions and the reasoning behind them. That is what an AI does well.</p>
+      <p>The AI we call (named Engram) writes a short summary in a fixed format: <em>what you decided, why, and what you rejected</em>. Just the strategic stuff. No fluff.</p>
+      <p><strong>Why do I need an API key?</strong></p>
+      <p>To use an AI, you need an account with one of the AI companies. The API key is your account ID. Without it, the AI company doesn't know who you are.</p>
+      <p>We don't ship a built-in key because every user would share it, which the AI companies don't allow. Each person needs their own.</p>
+      <p>The good news: most providers give you free credits when you sign up. And each Extract Now costs less than a cent.</p>
+      <p><strong>Is there a fully free option?</strong></p>
+      <p>Yes — pick <strong>Ollama</strong> as your provider. It runs the AI on your own computer. No account, no key, no cost. One-time setup: install Ollama, then pick it from the provider dropdown.</p>
+      <p><strong>Do I need a big AI model?</strong></p>
+      <p>No. The job is small and bounded (read a chat, extract decisions, write a short summary). We use small, fast, cheap models on purpose. A 3 billion-parameter local model on your laptop is plenty.</p>
+    </div>
+
+    <div class="help-section">
+      <h3>What does each button do?</h3>
+      <p><strong>Extract Now</strong> — Reads the AI chat in the current tab. Saves the decisions to BRAIN.md.</p>
+      <p><strong>Copy Brain</strong> — Copies your decision history with the right wrapper for the AI you're on. Paste it into a fresh chat to pick up where you left off.</p>
+      <p><strong>Reconnect</strong> — Your browser drops the folder link when this popup closes. One click puts it back.</p>
+    </div>
+
+    <div class="help-section">
+      <h3>Where does my data go?</h3>
+      <p>Your decisions stay on your computer. Total Recall has no server. We never see your chats.</p>
+      <p>The only outside connection happens when you click <em>Extract Now</em>. The current chat gets sent to the AI provider you chose so they can read it and pull out the decisions. Nothing else leaves your machine.</p>
+      <p>If you want zero outside connections, pick <strong>Ollama</strong> as your provider — it runs an AI on your own computer with no cloud at all.</p>
+    </div>
+
+    <div class="help-section">
+      <h3>What does it cost?</h3>
+      <p>Cloud providers cost <strong>less than a cent</strong> per Extract Now. A heavy user might spend 30 cents a month.</p>
+      <p>Ollama is free after you install it.</p>
+    </div>
+
+    <div class="help-section">
+      <h3>When should I use it?</h3>
+      <ul>
+        <li>After a long planning conversation where you made real decisions</li>
+        <li>When you finish a deep brainstorm or working session</li>
+        <li>Before closing a tab with important context</li>
+        <li>Any time you'd otherwise have to re-explain context in your next chat</li>
+      </ul>
+    </div>
+
+    <div class="help-section">
+      <h3>Common questions</h3>
+      <p><strong>Why does it say "reconnect needed"?</strong><br>Your browser drops folder access when the popup closes. Tap Reconnect — one click and you're back.</p>
+      <p><strong>"No decisions in this chat worth saving"</strong> — The chat was just informational, with no real Chose/Why/Rejected decisions. Not a bug.</p>
+      <p><strong>Why did Extract Now find nothing on ChatGPT/Gemini/DeepSeek?</strong><br>Those platforms are experimental in v0.1 — see the section above. Try Copy Brain instead, or wait for v0.2.</p>
+      <p><strong>Can I read BRAIN.md without the extension?</strong><br>Yes. It's plain markdown. Open it in any text editor or markdown reader.</p>
+      <p><strong>Can I edit BRAIN.md by hand?</strong><br>Yes. It's your file. Total Recall will keep appending below your edits.</p>
+    </div>
+
+    <div class="help-section help-foot">
+      <p>Total Recall is open source under the MIT licence. <a href="https://github.com/robertangeles/cc-total-recall" target="_blank" rel="noopener">github.com/robertangeles/cc-total-recall</a></p>
+    </div>
+  </section>
+
+  <section id="settingsView" class="view" hidden>
+    <div class="settings-header">
+      <button id="backBtn" type="button" class="link-btn">← Back</button>
+      <h2 class="settings-title">Settings</h2>
+    </div>
+
+    <div class="form-group">
+      <label for="providerSelect" class="label">Where Engram runs</label>
+      <select id="providerSelect" class="input">
+        <option value="anthropic">Anthropic Claude (cloud)</option>
+        <option value="openai">OpenAI (cloud)</option>
+        <option value="openrouter">OpenRouter (cloud)</option>
+        <option value="ollama">Ollama (local, free)</option>
+      </select>
+    </div>
+
+    <div class="form-group" id="apiKeyGroup">
+      <label for="apiKeyInput" class="label">API key</label>
+      <div class="input-wrap">
+        <input id="apiKeyInput" type="password" class="input input-with-icon" placeholder="" autocomplete="off" spellcheck="false">
+        <button id="apiKeyToggle" type="button" class="input-icon-btn" aria-label="Show API key" title="Show API key">
+          <svg class="icon-eye" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+          <svg class="icon-eye-off" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+            <line x1="1" y1="1" x2="23" y2="23"/>
+          </svg>
+        </button>
+      </div>
+      <div id="apiKeyValidation" class="hint"></div>
+    </div>
+
+    <div class="form-group">
+      <label for="modelSelect" class="label">Model <span class="label-aux">(optional)</span></label>
+      <select id="modelSelect" class="input"></select>
+      <input id="modelInput" type="text" class="input" hidden placeholder="" autocomplete="off" spellcheck="false">
+      <div class="hint">
+        <button id="modelCustomToggle" type="button" class="link-btn">Use custom model ID</button>
+      </div>
+    </div>
+
+    <div class="provider-help" id="providerHelp"></div>
+
+    <div class="form-actions">
+      <button id="testConnBtn" type="button" class="btn-secondary">Test connection</button>
+      <button id="saveSettingsBtn" type="button" class="btn-primary">Save</button>
+    </div>
+  </section>
+
+  <div id="message" class="message" role="status" aria-live="polite"></div>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

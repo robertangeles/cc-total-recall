@@ -1,0 +1,22 @@
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Optional: regenerable wiki graph (parent project convention)
+wiki/.graph.json
+
+# Local secrets — should never appear here, but defence in depth
+.env
+.env.*
+*.key
+*.pem
+secrets.json
