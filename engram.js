@@ -308,12 +308,30 @@ function todayIso() {
 // Defense against prompt injection: a malicious conversation cannot trick the
 // LLM into outputting executable HTML, scripts, or text outside the expected
 // markdown entry shape.
+//
+// Threat model: an attacker plants a Claude/ChatGPT/etc. conversation that
+// the user later runs Extract Now on. If Engram echoes the attacker's
+// malicious content (markdown link with javascript: URI, raw <a href=...>,
+// embedded data: URI, etc.) into BRAIN.md, opening BRAIN.md in a markdown
+// renderer could trigger the payload. We reject these before write.
 function isValidEntry(text) {
   if (typeof text !== 'string') return false;
   if (text.length === 0 || text.length > MAX_ENTRY_BYTES) return false;
   if (!text.startsWith('### ')) return false;
   if (!/\*\*(Decisions|Context updated|Open questions):\*\*/.test(text)) return false;
-  if (/<\s*\/?\s*(script|iframe|object|embed|link|style|meta|svg|img|on\w+\s*=)/i.test(text)) return false;
+
+  // HTML tags / event-handler attributes that could execute or fetch.
+  if (/<\s*\/?\s*(script|iframe|object|embed|link|style|meta|svg|img|a\b|on\w+\s*=)/i.test(text)) return false;
+
+  // Markdown link with dangerous URI scheme:  [text](javascript:...) / data: / vbscript: / file:
+  if (/\]\s*\(\s*(javascript|data|vbscript|file)\s*:/i.test(text)) return false;
+
+  // Angle-bracket auto-link with dangerous URI scheme:  <javascript:...>
+  if (/<\s*(javascript|data|vbscript|file)\s*:/i.test(text)) return false;
+
+  // HTML href attribute with dangerous URI scheme (defence in depth).
+  if (/\bhref\s*=\s*["']?\s*(javascript|data|vbscript|file)\s*:/i.test(text)) return false;
+
   return true;
 }
 

