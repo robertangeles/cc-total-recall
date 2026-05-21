@@ -64,3 +64,44 @@ field. Fix lands for future entries; one prior entry in BRAIN.md still has the
 LLM's `[PERSON_NAME]` placeholder cosmetic bug — left in place as evidence.
 
 v0.1 is functionally complete pending stress tests.
+
+## 2026-05-21 — Brave Browser support (CEO + Eng review + Phase 2 implementation)
+
+Ran `/plan-ceo-review` then `/plan-eng-review` for "wire Total Recall to work
+with Brave Browser." Selected SELECTIVE EXPANSION mode. Approach B locked in:
+first-class Brave support (verify + minor UX hooks + launch post), not a
+separate SKU and not a do-nothing.
+
+Cherry-picks accepted: E1 (README accuracy), E2 (Brave detection — folded
+into E6 implementation), E4 (Brave Community launch post draft), E6 (in-popup
+Shields hint on empty extract). Deferred: E3 (Leo provider → v0.3), E5 (Brave
+Search AI as platform → v0.2 platform coverage).
+
+**Critical finding from eng review:** `README.md:295` already claimed Brave
+worked after enabling `brave://flags/#file-system-access-api`. Git log showed
+no Brave testing ever happened. Claim removed and rewritten as honest "Brave
+is Chromium-based, install via load-unpacked, verification in progress." The
+verification matrix lives at
+`wiki/lessons-learned/2026-05-21-brave-verification-pending.md` for a human
+to fill in once Brave is at hand. Launch post is DRAFT, gated on matrix.
+
+Phase 2 code changes shipped this session:
+- `popup.js` — module-level async Brave detection via
+  `navigator.brave?.isBrave?.()`, cached as `isBrave`
+- `popup.js` COPY — new `noConversationBrave` and `notSupportedTabBrave`
+  entries pointing users to Shields
+- `popup.js` — empty-extract branches at ~line 783 now select Brave-aware
+  copy when `isBrave === true`, on both the `claude` and unknown-platform
+  paths (skipped the experimental-platform branch — message is already long)
+- `README.md` — Browser compatibility section rewritten
+- `wiki/synthesis/brave-launch-post.md` — DRAFT launch post
+- `wiki/backlog/backlog.md` — Brave matrix line added to v0.1 stress checklist,
+  Leo + Brave Search AI captured as v0.3 / v0.2 candidates
+- `wiki/index.md` — synthesis + lessons-learned sections seeded
+
+Phase 1 verification (load in Brave, run the 42-check stress matrix, confirm
+or refute the FSA flag claim) is intentionally NOT done — requires a human at
+a Brave install. Punch list documented in the eng review doc.
+
+Reversibility: 5/5. All changes additive. Zero new attack surface. Zero
+new dependencies. ~30 LOC of code + docs.

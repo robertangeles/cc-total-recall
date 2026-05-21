@@ -25,6 +25,7 @@ Ordered by priority. Top = build next.
 - [ ] Test Ollama if installed (local privacy path)
 - [ ] Copy Brain on Gemini and DeepSeek (verify those wrappers work, not just Claude/ChatGPT)
 - [ ] Settings persistence across popup close/reopen
+- [ ] **Brave matrix:** run the full v0.1 stress test inside Brave under Shields Standard / Aggressive / Off. Track in `wiki/lessons-learned/2026-05-21-brave-verification-pending.md`. Promote findings to README on completion.
 
 ## v0.2 — Platform Coverage
 - [ ] content.js — ChatGPT DOM extraction + auto-inject
@@ -43,6 +44,12 @@ Ordered by priority. Top = build next.
 - [ ] Detect conversation-end signal (idle threshold) and auto-trigger Extract Now
 - [ ] Settings toggle for auto-extract on/off
 - [ ] Settings for idle threshold
+
+## v0.3 — Brave-aligned candidates (from 2026-05-21 CEO review)
+- [ ] **Leo provider integration** — add Brave's local LLM (Leo) to the provider whitelist as a fifth option alongside Anthropic / OpenAI / OpenRouter / Ollama. Leo exposes an API surface similar to Ollama. Genuine product work, not Brave compatibility.
+
+## v0.2 — Brave-aligned candidates (from 2026-05-21 CEO review)
+- [ ] **Brave Search AI as a supported platform** — add to host_permissions + content_scripts alongside Claude / ChatGPT / Gemini / DeepSeek. DOM selectors TBD. Belongs with the rest of the v0.2 platform-coverage selector work.
 
 ## v0.4 — Open Source Release
 - [ ] README.md (write after v0.1 ship)

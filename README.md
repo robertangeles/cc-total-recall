@@ -291,8 +291,14 @@ Cloud providers cost a fraction of a cent per Extract Now. Ollama is free.
 
 ### Browser compatibility
 
-- **Chrome / Edge** — fully supported.
-- **Brave** — works after enabling `brave://flags/#file-system-access-api` (Brave disables the API by default for privacy reasons).
+- **Chrome / Edge** — fully supported. v0.1 stress-tested on Edge.
+- **Brave** — works after a one-time flag toggle. Brave ships with the File System Access API **disabled by default** (`window.showDirectoryPicker` is not present). Enable it once:
+  1. Open `brave://flags/#file-system-access-api`
+  2. Set "File System Access API" to **Enabled**
+  3. Click **Relaunch** when Brave prompts
+  4. Reload the extension at `brave://extensions` and pin the icon
+
+  Verified on Brave 148.1.90.122 at Shields Standard: Extract Now writes correctly to BRAIN.md on Claude.ai. The popup detects Brave at runtime and surfaces a Shields hint if extraction comes back empty (suggesting Shields-Aggressive may be blocking the content script on that site).
 - **Firefox** — not supported (no File System Access API, different extension model).
 
 ---

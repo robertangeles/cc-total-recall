@@ -15,6 +15,15 @@ const BRAIN_CACHE_KEY = 'brain-cache';
 // In-memory cache of the granted directory handle.
 let currentHandle = null;
 
+// Brave detection. Resolves to true on Brave, stays false everywhere else.
+// Fires at popup load; the only read site (Extract Now empty-text branch)
+// runs at user click time, well after this settles.
+let isBrave = false;
+(async () => {
+  try { isBrave = (await navigator.brave?.isBrave?.()) === true; }
+  catch { /* non-Brave; ignore */ }
+})();
+
 // --- Copy ------------------------------------------------------------------
 // All user-facing strings live here. Year-6 reading level: short sentences,
 // concrete nouns, friendly tone, no jargon.
@@ -45,6 +54,8 @@ const COPY = {
     noActiveTab: 'No active tab found.',
     notSupportedTab: 'Open a Claude, ChatGPT, Gemini, or DeepSeek chat first.',
     noConversation: 'Nothing to read on this page. Open an AI chat with some history.',
+    noConversationBrave: 'Nothing to read on this page. If Brave Shields is on Aggressive for this site, try lowering it to Standard and retry.',
+    notSupportedTabBrave: 'Open a Claude, ChatGPT, Gemini, or DeepSeek chat first. If you are on Brave, check Shields is not blocking the extension on this tab.',
     experimentalPlatform: 'Extract is verified on Claude.ai only in v0.1. ChatGPT, Gemini, and DeepSeek are experimental — try Copy Brain instead.',
     needFolder: 'Pick a brain folder first.',
     needProvider: 'Set up an AI provider in Settings first.',
@@ -781,9 +792,9 @@ async function extractNow(btn) {
       if (p === 'chatgpt' || p === 'gemini' || p === 'deepseek') {
         showMessage(COPY.messages.experimentalPlatform, 'info', 6000);
       } else if (p === 'claude') {
-        showMessage(COPY.messages.noConversation, 'error');
+        showMessage(isBrave ? COPY.messages.noConversationBrave : COPY.messages.noConversation, 'error');
       } else {
-        showMessage(COPY.messages.notSupportedTab, 'error');
+        showMessage(isBrave ? COPY.messages.notSupportedTabBrave : COPY.messages.notSupportedTab, 'error');
       }
       return;
     }
