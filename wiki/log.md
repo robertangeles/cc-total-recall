@@ -105,3 +105,27 @@ a Brave install. Punch list documented in the eng review doc.
 
 Reversibility: 5/5. All changes additive. Zero new attack surface. Zero
 new dependencies. ~30 LOC of code + docs.
+
+## 2026-05-21 — Two pre-existing issues fixed
+
+Both issues called out (but not addressed) in commit `cb6726c` are now fixed.
+
+**UTF-8 BOM on BRAIN.md.** Notepad on Windows (and a few other tools) default
+to Latin-1 when a file has no BOM, which mojibakes em-dashes (`—`) as `â`.
+storage.js now writes a UTF-8 BOM (`U+FEFF`) on `initBrain` and `appendToBrain`.
+`readBrain` strips the BOM before returning content, so downstream consumers
+(auto-inject content script, chrome.storage.local brain-cache, popup preview)
+never see `﻿` as a literal character. Existing BRAIN.md files auto-migrate
+on the next append — no explicit migration step required from users.
+
+**Engram `[PERSON_NAME]` hallucination.** Claude Haiku 4.5 (and other models
+trained with PII safety reflexes) occasionally substitute proper nouns with
+placeholder tokens like `[PERSON_NAME]` even when nothing in the conversation
+warrants redaction. Added an explicit rule to the Engram system prompt
+instructing the model to preserve all proper nouns exactly as written, with
+the rationale that BRAIN.md is private to the user and stored only on their
+own machine. Does NOT rewrite existing BRAIN.md entries — only affects future
+extractions.
+
+Files changed: storage.js (+11/-4), engram.js (+2/-1), wiki/backlog/backlog.md
+(UTF-8 BOM item struck through with ship reference).

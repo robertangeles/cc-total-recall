@@ -35,7 +35,7 @@ Ordered by priority. Top = build next.
 
 ## v0.2 — UX polish
 - [ ] Manual Capture button — let user type a one-line decision directly, no LLM call
-- [ ] UTF-8 BOM on BRAIN.md so Notepad opens it correctly
+- [x] ~~UTF-8 BOM on BRAIN.md so Notepad opens it correctly~~ — shipped 2026-05-21 (storage.js: BOM prepended on initBrain + appendToBrain; readBrain strips for downstream consumers; existing files auto-migrate on next append)
 - [ ] Disable auto-inject toggle (some users may want manual paste only)
 - [ ] First-run onboarding wizard (currently the settings panel doubles as setup)
 - [ ] Encrypted API key storage (passphrase-derived)

@@ -10,6 +10,14 @@ const BRAIN_FILENAME = 'BRAIN.md';
 const DECISIONS_HEADER = '## Decisions Log';
 const TEMPLATE_PATH = 'BRAIN-template.md';
 
+// UTF-8 BOM. Notepad (and a few other Windows tools) default to Latin-1 when
+// no BOM is present and mojibake em-dashes as `â`. Writing the BOM makes
+// Notepad recognise UTF-8 and renders `—` correctly.
+const BOM = String.fromCharCode(0xFEFF);
+function stripBom(text) {
+  return (typeof text === 'string' && text.charCodeAt(0) === 0xFEFF) ? text.slice(1) : text;
+}
+
 function openDb() {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
@@ -102,7 +110,7 @@ export async function readBrain(handle) {
     if (!exists) return '';
     const fileHandle = await getBrainFileHandle(handle, { create: false });
     const file = await fileHandle.getFile();
-    return await file.text();
+    return stripBom(await file.text());
   } catch (err) {
     console.error('[Total Recall] readBrain failed:', err);
     return '';
@@ -118,7 +126,7 @@ export async function initBrain(handle) {
     const template = await fetchTemplate();
     const fileHandle = await getBrainFileHandle(handle, { create: true });
     const writable = await fileHandle.createWritable();
-    await writable.write(template);
+    await writable.write(BOM + template);
     await writable.close();
     return true;
   } catch (err) {
@@ -142,7 +150,7 @@ export async function appendToBrain(handle, entry) {
     }
 
     const fileHandle = await getBrainFileHandle(handle, { create: false });
-    const current = await (await fileHandle.getFile()).text();
+    const current = stripBom(await (await fileHandle.getFile()).text());
 
     const idx = current.indexOf(DECISIONS_HEADER);
     if (idx === -1) {
@@ -153,7 +161,7 @@ export async function appendToBrain(handle, entry) {
     const updated = current.slice(0, insertAt) + '\n\n' + trimmed + '\n' + current.slice(insertAt);
 
     const writable = await fileHandle.createWritable();
-    await writable.write(updated);
+    await writable.write(BOM + updated);
     await writable.close();
     return true;
   } catch (err) {
