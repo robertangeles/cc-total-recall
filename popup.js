@@ -52,7 +52,7 @@ const COPY = {
     reconnected: 'Reconnected — BRAIN.md ready',
     permissionDenied: 'Permission denied. Click Reconnect to try again.',
     noActiveTab: 'No active tab found.',
-    notSupportedTab: 'Open a Claude, ChatGPT, Gemini, or DeepSeek chat first.',
+    notSupportedTab: 'Please make sure you are in the chat page else refresh the page.',
     noConversation: 'Nothing to read on this page. Open an AI chat with some history.',
     noConversationBrave: 'Nothing to read on this page. If Brave Shields is on Aggressive for this site, try lowering it to Standard and retry.',
     notSupportedTabBrave: 'Open a Claude, ChatGPT, Gemini, or DeepSeek chat first. If you are on Brave, check Shields is not blocking the extension on this tab.',

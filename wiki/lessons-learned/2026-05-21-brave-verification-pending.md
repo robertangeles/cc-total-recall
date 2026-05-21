@@ -83,14 +83,14 @@ Record notes inline for any non-pass.
 | 3 | Folder picker opens (FSA API, flag enabled) | P | _ | _ |
 | 3a | Folder picker WITHOUT flag enabled | F (TypeError) | F | F |
 | 4 | IndexedDB persists folder handle | P (in-session) | _ | _ |
-| 5 | Browser restart → "reconnect needed" → re-grant works | _ | _ | _ |
+| 5 | Browser restart → "reconnect needed" → re-grant works | P | _ | _ |
 | 6 | content.js injects on claude.ai | P | _ | _ |
 | 7 | Claude DOM read returns transcript | P | _ | _ |
 | 8 | Auto-inject on claude.ai/new pre-fills input | P | _ | _ |
 | 9 | engram.js fetch to chosen LLM provider succeeds | P (OpenRouter) | _ | _ |
 | 10 | BRAIN.md append succeeds | P (4 entries written) | _ | _ |
-| 11 | Copy Brain on Claude | _ | _ | _ |
-| 12 | Copy Brain on ChatGPT | _ | _ | _ |
+| 11 | Copy Brain on Claude | P | _ | _ |
+| 12 | Copy Brain on ChatGPT | P | _ | _ |
 | 13 | `navigator.brave.isBrave()` returns true (DevTools check) | P | P | P |
 | 14 | E6 Shields hint surfaces on empty extract | P | _ | _ |
 
@@ -135,6 +135,35 @@ is going to ship, gate it on this matrix completing with all critical
 (★★★) rows passing.
 
 ---
+
+## Additional findings from 2026-05-21 verification session
+
+### Shields Aggressive spot-check (Claude.ai)
+Set Brave Shields → "Block trackers & ads" → Aggressive on claude.ai,
+reloaded page, ran Extract Now. **Result: still extracts cleanly.** The E6
+Brave hint in popup.js did NOT fire because the content script was not
+blocked — current Brave's Aggressive trackers/ads setting does not block
+extension content scripts. The hint code remains as defensive guidance
+for users who set Block Scripts manually or for future Brave versions.
+
+### Alt-model empirical verification via OpenRouter
+After fixing stale model slugs (commit 8ff8175 — `gemini-flash-1.5` was a
+dead model, dotted slugs are canonical for Anthropic on OpenRouter):
+
+| Model (OpenRouter slug) | Extract result | [PERSON_NAME] artifact |
+|---|---|---|
+| anthropic/claude-haiku-4.5 (default) | Saved | Yes (multiple occurrences) |
+| openai/gpt-4o-mini | Saved (after header-prefix fix 5b7ce9f) | Yes |
+| google/gemini-2.5-flash-lite | Saved | Not specifically tested for [PERSON_NAME] |
+| meta-llama/llama-3.2-3b-instruct | Saved | Not specifically tested for [PERSON_NAME] |
+
+Four OpenRouter models confirmed working with Engram's strict shape
+validation. The header-prefix tolerance fix (5b7ce9f) was the unlock for
+gpt-4o-mini; subsequent models worked without further accommodation.
+
+[PERSON_NAME] redaction reflex was confirmed cross-model on Haiku and
+gpt-4o-mini; not specifically retested on Gemini and Llama since the
+finding (model-side PII reflex, not prompt-fixable) was already established.
 
 ## Format note
 
