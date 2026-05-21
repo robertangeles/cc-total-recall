@@ -65,8 +65,7 @@ Rules:
 - If there is nothing worth capturing from this conversation, output exactly: ${NOTHING_SENTINEL}
 - Be ruthlessly concise. One bullet per decision. No padding.
 - Every decision entry must follow Chose/Why/Rejected format. No exceptions.
-- If you cannot identify what was rejected and why, it is not a decision — skip it.
-- DO NOT redact or substitute proper nouns. Preserve names of people, products, companies, places, and tools exactly as they appear in the conversation. Never replace them with placeholders like [PERSON_NAME], [REDACTED], [NAME], [COMPANY], [USER], or similar. BRAIN.md is private to the user, stored only on their own machine — there is no privacy concern that justifies redaction here, and placeholder substitution destroys the strategic value of the entry.`;
+- If you cannot identify what was rejected and why, it is not a decision — skip it.`;
 
 // --- Provider whitelist ---------------------------------------------------
 // Every supported LLM lives here. To add a provider:
