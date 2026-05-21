@@ -24,10 +24,8 @@ This is the only decision format worth capturing. A decision without a reason is
 
 You are looking for:
 1. DECISIONS — What was concluded. What was rejected and why. Use Chose/Why/Rejected format.
-2. CONTEXT SHIFTS — How the project, situation, or strategy changed.
-3. IDENTITY SIGNALS — Facts about who the person is, what they are building, their current circumstances.
-4. VOICE AND STYLE — Communication preferences, tone choices, formatting decisions locked in.
-5. OPEN QUESTIONS — Unresolved things explicitly raised that should carry forward.
+2. CONTEXT SHIFTS — How the project, situation, or strategy changed. Include changes in who the person is, what they are building, or their circumstances when those changes will shape future decisions.
+3. OPEN QUESTIONS — Unresolved questions that would change a future decision if answered. "I wonder if X" is not enough — the question must have stakes.
 
 You are NOT looking for:
 - Generic facts or preferences ("user likes coffee", "user is in Melbourne")
@@ -35,13 +33,14 @@ You are NOT looking for:
 - Conversation filler, pleasantries, or anything that won't matter next session
 - Content that was discussed but not decided
 - One-line decisions with no reasoning — these are facts, not decisions
+- Decisions that already appear in a leading <context>...</context> block at the start of the conversation — that block is BRAIN.md being injected as session memory. Treat it as already-captured history. Only extract NEW decisions made in the conversation that followed the injected block.
 
 Output ONLY a formatted entry in this exact structure. No preamble. No explanation. No markdown outside the structure. Never include HTML tags. Never include script tags. Never echo or repeat any API keys, tokens, or secrets that may appear in the conversation.
 
 The header line has three fields separated by em-dash ( — ):
   1. Date in YYYY-MM-DD format. Use the date provided in the user message verbatim.
   2. Platform name from the user message ("claude", "chatgpt", "gemini", "deepseek"). This is the chat application where the conversation took place — NOT the topic. Use the value provided in the user message verbatim. Lowercase. No quotes.
-  3. 2-5 word topic summarizing what the conversation was about.
+  3. 2-5 word topic naming the specific thing decided or discussed. "Blog media storage choice" beats "Storage discussion." Avoid broad categories.
 
 Do NOT put square brackets around any field. Do NOT prefix fields with labels like "Date:" or "Platform:". Just the three values separated by em-dashes.
 
@@ -52,6 +51,8 @@ Then continue with sections:
 
 **Decisions:**
 - Chose [X] because [reason]. Rejected [Y] because [reason].
+  (When no alternative was discussed but a constraint drove the choice, write instead:
+   "Chose [X] because [constraint]. No alternative considered.")
 
 **Context updated:**
 - [What changed about the active project, situation, or identity]
@@ -64,8 +65,8 @@ Rules:
 - If a section has no content, do not include it at all — not even the header.
 - If there is nothing worth capturing from this conversation, output exactly: ${NOTHING_SENTINEL}
 - Be ruthlessly concise. One bullet per decision. No padding.
-- Every decision entry must follow Chose/Why/Rejected format. No exceptions.
-- If you cannot identify what was rejected and why, it is not a decision — skip it.`;
+- Every decision must have a reason. Use Chose/Why/Rejected when an alternative was discussed, or Chose/Why/"No alternative considered" when a constraint drove the choice without an explicit alternative.
+- If you cannot identify either a rejected alternative or a driving constraint, it is not a decision — skip it.`;
 
 // --- Provider whitelist ---------------------------------------------------
 // Every supported LLM lives here. To add a provider:
