@@ -12,6 +12,19 @@ Verified on Claude.ai in v0.1. ChatGPT, Gemini, and DeepSeek are experimental �
 
 ---
 
+## What's new — 2026-05-21
+
+- **Brave Browser support** — Total Recall now works on Brave. One-time flag toggle at `brave://flags/#file-system-access-api`, then it behaves like Edge or Chrome. The popup detects Brave at runtime and surfaces a Shields-troubleshooting hint if extraction returns empty. Stress-tested end-to-end on Brave 148.1.90.122.
+- **UTF-8 BOM on BRAIN.md** — Notepad on Windows now renders em-dashes (`—`) correctly instead of mangling them as `â`. Existing BRAIN.md files migrate automatically on the next Extract Now.
+- **More providers verified** — Engram now works with `openai/gpt-4o-mini`, `google/gemini-2.5-flash-lite`, and `meta-llama/llama-3.2-3b-instruct` via OpenRouter, alongside the default `anthropic/claude-haiku-4.5`. Previously only Claude Haiku was fully tested. The OpenRouter model dropdown was rebuilt against the live catalog after one stale slug (`gemini-flash-1.5`) was caught producing 404s.
+- **Tolerance for `### ` header omission** — some models (notably gpt-4o-mini) produce structurally correct entries but skip the leading markdown header prefix. Engram now adds it back when the rest of the entry is well-formed. Net effect: more models work reliably without per-model prompt tuning.
+- **Engram prompt structural overhaul** — five focused changes addressing real review findings. Voice-and-style category dropped (it had no home in the output structure). Identity signals folded into context shifts with explicit decision-adjacency framing. Deduplication rule added so Engram skips decisions already present in auto-injected BRAIN.md context. New capture path for decisions that constrain future sessions even without an explicit rejected alternative ("Chose X because constraint. No alternative considered."). Open questions now require a stakes test. Topic specificity guidance added.
+- **Honest known limitation** — every supported model occasionally substitutes `[PERSON_NAME]` for proper nouns like "Claude Code" because PII safety training reads "Claude" as a first name. Confirmed cross-model on both Claude Haiku 4.5 and gpt-4o-mini. Cannot be reliably suppressed at the prompt layer — attempts to do so destabilize capture behaviour. The placeholder is a cosmetic artifact in a markdown file you control; edit BRAIN.md by hand when it matters.
+
+The Reconnect-button-per-popup friction is **still present** — the offscreen-document approach to eliminate it is the next major v0.2 work.
+
+---
+
 ## The problem
 
 Every AI session starts from zero. You explained your architecture to Claude last week. You decided against a specific approach for a real reason. You were building toward something specific.
