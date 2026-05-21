@@ -275,12 +275,25 @@ export async function extract({ transcript, platform, provider, apiKey, model } 
   }
   const trimmed = raw.trim();
   if (trimmed === NOTHING_SENTINEL) return { kind: 'nothing' };
-  const normalized = normalizeHeader(trimmed, platform);
+  const prefixed = ensureHeaderPrefix(trimmed);
+  const normalized = normalizeHeader(prefixed, platform);
   if (!isValidEntry(normalized)) {
     safeLog('extract: response failed entry shape validation, discarding');
     return { kind: 'error', reason: 'malformed-entry' };
   }
   return { kind: 'entry', entry: normalized };
+}
+
+// Some models (observed: gpt-4o-mini) emit a structurally valid entry but
+// omit the leading "### " markdown prefix, producing output that begins
+// directly with the date. Restore the prefix only when the line clearly
+// already looks like a date-platform-topic header. Anything else falls
+// through unchanged and gets rejected by isValidEntry as before.
+function ensureHeaderPrefix(entry) {
+  if (typeof entry !== 'string') return entry;
+  if (entry.startsWith('### ')) return entry;
+  if (/^\d{4}-\d{2}-\d{2}\s*—/.test(entry)) return '### ' + entry;
+  return entry;
 }
 
 // Deterministically rewrite the header's date and platform fields. The LLM

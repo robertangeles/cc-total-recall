@@ -319,7 +319,7 @@ Cloud providers cost a fraction of a cent per Extract Now. Ollama is free.
 - ⚠️ Extract Now verified on Claude.ai only. Other platforms experimental.
 - ⚠️ Three clicks per save (icon → Reconnect → Extract Now). Chromium permission lifecycle, not our choice.
 - ⚠️ `document.execCommand('insertText')` is deprecated. The `InputEvent` fallback for auto-inject exists but is untested. If Chrome removes `execCommand`, auto-inject may silently fail until the fallback is verified.
-- ⚠️ **Claude Haiku 4.5 occasionally substitutes `[PERSON_NAME]` for proper nouns** it interprets as person names (the most common case: "Claude Code" gets bracketed because the model reads "Claude" as a first name). The Engram prompt cannot reliably suppress this — attempts to add anti-redaction instructions destabilize capture behavior. The artifact is cosmetic and you can edit BRAIN.md manually to restore the original name. The prompt is calibrated for Claude's instruction-following; switching to other models (gpt-4o-mini, Gemini Flash) currently produces shape-invalid output and needs per-model prompt tuning before it works reliably.
+- ⚠️ **LLMs occasionally substitute `[PERSON_NAME]` for proper nouns** they interpret as person names. The most common trigger is "Claude Code" getting bracketed because models trained with PII safety reflexes read "Claude" as a first name. Verified in this codebase on both Claude Haiku 4.5 and gpt-4o-mini via OpenRouter — it is a cross-model behavior, not specific to one provider. The Engram prompt cannot reliably suppress it: attempts to add anti-redaction instructions destabilize capture behavior. The artifact is cosmetic — you can edit BRAIN.md manually to restore the original name.
 
 ### v0.2 roadmap
 - Verify ChatGPT, Gemini, DeepSeek DOM selectors against live pages
@@ -327,7 +327,7 @@ Cloud providers cost a fraction of a cent per Extract Now. Ollama is free.
 - "Manual Capture" button (skip the LLM — let users type decisions directly)
 - Encrypted API key storage (passphrase-derived)
 - Cap the chrome.storage.local brain-cache to avoid the 10MB quota silently breaking auto-inject on long brains
-- Per-model Engram prompt calibration — gpt-4o-mini and Gemini Flash currently fail shape validation; need model-aware prompt variants to make non-Anthropic providers as reliable as Claude
+- Verify Gemini Flash 1.5 and Llama 3.2 3B against the Engram prompt — gpt-4o-mini works after the header-prefix tolerance fix; other non-Claude models may need additional accommodations before they are as reliable as Claude
 
 Full backlog in `wiki/backlog/backlog.md`.
 
