@@ -131,7 +131,7 @@ const PROVIDERS = {
   openrouter: {
     label: 'OpenRouter',
     endpoint: 'https://openrouter.ai/api/v1/chat/completions',
-    defaultModel: 'anthropic/claude-haiku-4-5',
+    defaultModel: 'anthropic/claude-haiku-4.5',
     keyPattern: /^sk-or-[A-Za-z0-9_\-]{20,}$/,
     buildRequest(apiKey, model, system, user) {
       return {

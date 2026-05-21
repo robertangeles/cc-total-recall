@@ -133,12 +133,12 @@ const PROVIDER_INFO = {
     label: 'OpenRouter',
     keyRequired: true,
     keyPlaceholder: 'sk-or-...',
-    defaultModel: 'anthropic/claude-haiku-4-5',
+    defaultModel: 'anthropic/claude-haiku-4.5',
     altModels: [
       { id: 'openai/gpt-4o-mini',                   label: 'OpenAI GPT-4o mini — small, cheap' },
-      { id: 'google/gemini-flash-1.5',              label: 'Google Gemini Flash 1.5 — small, cheap' },
+      { id: 'google/gemini-2.5-flash-lite',         label: 'Google Gemini 2.5 Flash Lite — small, cheap' },
       { id: 'meta-llama/llama-3.2-3b-instruct',     label: 'Llama 3.2 3B — open-source, ~free' },
-      { id: 'anthropic/claude-sonnet-4-6',          label: 'Claude Sonnet 4.6 — higher quality, costs more' }
+      { id: 'anthropic/claude-sonnet-4.6',          label: 'Claude Sonnet 4.6 — higher quality, costs more' }
     ],
     helpHtml: `<strong>Get an API key</strong>
       <ol>

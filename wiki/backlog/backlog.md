@@ -62,6 +62,14 @@ Ordered by priority. Top = build next.
 - Service worker file system access: SW can't reliably read BRAIN.md (handle permission resets on every fetch). Worked around via chrome.storage.local mirror updated by popup. If we want SW-driven background extraction (v0.3), the offscreen document API may be the answer.
 - Permission lifetime: amber "reconnect" appears once per popup-open. Could investigate offscreen document for "always granted in this browser session" UX.
 
+## v0.2 — Model catalog validation (from 2026-05-21 empirical failure)
+
+- [ ] **Validate the Anthropic direct API model list** (`claude-haiku-4-5-20251001`, `claude-sonnet-4-6-20251001`, `claude-opus-4-7` in popup.js) against the Anthropic /v1/models endpoint. Currently unverified — point-in-time hardcoded slugs that may drift. Test with a real Anthropic key.
+- [ ] **Validate the OpenAI direct API model list** (`gpt-4o-mini`, `gpt-4o`, `gpt-4.1-mini` in popup.js) against the OpenAI /v1/models endpoint. Same risk class. Test with a real OpenAI key.
+- [ ] **Consider runtime model fetching** — replace hardcoded altModels with a one-shot fetch of each provider's /models endpoint on first popup open per session. Trades a tiny startup cost for the model lists never going stale again. v0.3 candidate if hardcoded lists keep drifting.
+
+**Why this matters:** the OpenRouter list shipped in v0.1 contained `google/gemini-flash-1.5` (404 — model deprecated) and `anthropic/claude-haiku-4-5` (worked only via OpenRouter's silent alias; canonical slug uses a dot, not a hyphen). Empirically discovered 2026-05-21 during cross-model testing. Fixed in same-day commits, but the broader concern — no provider list was validated at v0.1 ship time — applies to Anthropic and OpenAI lists too.
+
 ## v0.2 — Carry-forward items from pre-ship audit (2026-05-20)
 - [ ] **Verify ChatGPT DOM selectors against live page** — currently spec-baseline (`[data-message-author-role]`). Run the probe snippet on chatgpt.com, update content.js SELECTORS.chatgpt, mark platform as verified in popup help.
 - [ ] **Verify Gemini DOM selectors against live page** — currently spec-baseline (`.user-query-text, .model-response-text`). Same probe + update flow.
